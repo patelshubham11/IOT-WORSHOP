@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - SISTec IoT 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold">SISTec IoT Application 2026</h1>
+        <div class="flex items-center gap-4">
+            <span id="usernameDisplay" class="font-medium">Welcome, User</span>
+            <a href="/logout" class="bg-red-500 px-3 py-1 rounded hover:bg-red-600 text-sm">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <!-- Section 1: Latest Sensor Data -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-orange-500">
+                <h3 class="text-gray-500 uppercase text-sm font-bold mb-2">Latest Temperature</h3>
+                <div class="flex items-center justify-between">
+                    <span id="latestTemp" class="text-6xl font-extrabold text-orange-600">-- °C</span>
+                    <div class="text-right text-gray-400 text-xs">
+                        <p id="tempDate">Date: --</p>
+                        <p id="tempTime">Time: --</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-blue-500">
+                <h3 class="text-gray-500 uppercase text-sm font-bold mb-2">Latest Humidity</h3>
+                <div class="flex items-center justify-between">
+                    <span id="latestHum" class="text-6xl font-extrabold text-blue-600">-- %</span>
+                    <div class="text-right text-gray-400 text-xs">
+                        <p id="humDate">Date: --</p>
+                        <p id="humTime">Time: --</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 2: LCD Control -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h3 class="text-xl font-bold mb-4 text-gray-800">Control LCD Display</h3>
+            <div class="flex flex-col md:flex-row gap-4">
+                <input type="text" id="lcdInput" maxlength="16" placeholder="Enter text (max 16 chars)" 
+                    class="flex-grow border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none">
+                <button onclick="updateLCD()" class="bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 transition">Update LCD</button>
+            </div>
+            <p id="lcdStatus" class="mt-2 text-sm text-green-600 hidden font-medium">Text saved to lcd.txt!</p>
+        </div>
+
+        <!-- Section 3: Records History -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+            <h3 class="p-4 bg-gray-800 text-white font-bold">Sensor Records History</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-100 border-b">
+                        <tr>
+                            <th class="p-4">#</th>
+                            <th class="p-4">Temperature</th>
+                            <th class="p-4">Humidity</th>
+                            <th class="p-4">Time</th>
+                            <th class="p-4">Date</th>
+                            <th class="p-4 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recordsTable" class="divide-y">
+                        <!-- Rows injected by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Fetch user info
+        fetch('/api/user').then(res => res.json()).then(user => {
+            document.getElementById('usernameDisplay').innerText = `Welcome, ${user.name}`;
+        }).catch(() => window.location.href = '/');
+
+        // Fetch sensor data
+        function loadData() {
+            fetch('/api/sensors').then(res => res.json()).then(data => {
+                const tableBody = document.getElementById('recordsTable');
+                tableBody.innerHTML = '';
+
+                if (data.length > 0) {
+                    // Update latest cards
+                    const latest = data[0];
+                    document.getElementById('latestTemp').innerText = `${latest.temp} °C`;
+                    document.getElementById('latestHum').innerText = `${latest.hum} %`;
+                    document.getElementById('tempDate').innerText = `Date: ${latest.date}`;
+                    document.getElementById('tempTime').innerText = `Time: ${latest.time}`;
+                    document.getElementById('humDate').innerText = `Date: ${latest.date}`;
+                    document.getElementById('humTime').innerText = `Time: ${latest.time}`;
+
+                    // Populate table
+                    data.forEach((item, index) => {
+                        const row = `
+                            <tr>
+                                <td class="p-4">${index + 1}</td>
+                                <td class="p-4 font-bold text-orange-600">${item.temp} °C</td>
+                                <td class="p-4 font-bold text-blue-600">${item.hum} %</td>
+                                <td class="p-4">${item.time}</td>
+                                <td class="p-4">${item.date}</td>
+                                <td class="p-4 text-center">
+                                    <button onclick="deleteRecord(${index})" class="bg-red-100 text-red-600 px-3 py-1 rounded-md hover:bg-red-600 hover:text-white transition text-xs font-bold">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                }
+            });
+        }
+
+        // Update LCD
+        function updateLCD() {
+            const text = document.getElementById('lcdInput').value;
+            fetch('/api/update-lcd', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text })
+            }).then(res => res.json()).then(data => {
+                const status = document.getElementById('lcdStatus');
+                status.classList.remove('hidden');
+                setTimeout(() => status.classList.add('hidden'), 3000);
+            });
+        }
+
+        // Delete record
+        function deleteRecord(index) {
+            if (confirm('Delete this record?')) {
+                fetch('/api/delete-record', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ index })
+                }).then(res => res.json()).then(() => loadData());
+            }
+        }
+
+        // Auto refresh
+        loadData();
+        setInterval(loadData, 5000);
+    </script>
+</body>
+</html>
