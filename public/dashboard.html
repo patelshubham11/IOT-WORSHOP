@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - SISTec IoT 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- Navbar -->
@@ -61,6 +62,14 @@
             <p id="lcdStatus" class="mt-2 text-sm text-green-600 hidden font-medium">Text saved to lcd.txt!</p>
         </div>
 
+        <!-- Section 2.5: Climate Trends Graph -->
+        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
+            <h3 class="text-xl font-bold mb-4 text-gray-800">Climate Trends (Live Graph)</h3>
+            <div style="height: 350px;">
+                <canvas id="climateChart"></canvas>
+            </div>
+        </div>
+
         <!-- Section 3: Records History -->
         <div class="bg-white rounded-xl shadow-lg overflow-hidden">
             <h3 class="p-4 bg-gray-800 text-white font-bold">Sensor Records History</h3>
@@ -85,6 +94,54 @@
     </div>
 
     <script>
+        // Chart variable
+        let climateChart;
+
+        // Initialize Chart
+        function initChart() {
+            const ctx = document.getElementById('climateChart').getContext('2d');
+            climateChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [
+                        {
+                            label: 'Temperature (°C)',
+                            borderColor: '#f97316',
+                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                            data: [],
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Humidity (%)',
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            data: [],
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { 
+                            beginAtZero: false,
+                            grid: { color: '#f3f4f6' }
+                        },
+                        x: {
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+        }
+
         // Fetch user info
         fetch('/api/user').then(res => res.json()).then(user => {
             document.getElementById('usernameDisplay').innerText = `Welcome, ${user.name}`;
@@ -106,6 +163,13 @@
                     document.getElementById('tempTime').innerText = `Time: ${latest.time}`;
                     document.getElementById('humDate').innerText = `Date: ${latest.date}`;
                     document.getElementById('humTime').innerText = `Time: ${latest.time}`;
+
+                    // Update Chart (Last 10 records)
+                    const chartData = [...data].slice(0, 10).reverse();
+                    climateChart.data.labels = chartData.map(d => d.time);
+                    climateChart.data.datasets[0].data = chartData.map(d => d.temp);
+                    climateChart.data.datasets[1].data = chartData.map(d => d.hum);
+                    climateChart.update();
 
                     // Populate table
                     data.forEach((item, index) => {
@@ -157,9 +221,12 @@
             }
         }
 
-        // Auto refresh
-        loadData();
-        setInterval(loadData, 5000);
+        // Initialize and Start
+        window.onload = () => {
+            initChart();
+            loadData();
+            setInterval(loadData, 5000);
+        };
     </script>
 </body>
 </html>
