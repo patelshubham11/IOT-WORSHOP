@@ -3,90 +3,129 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard - SISTec IoT 2026</title>
+    <title>Kissan Smart Dashboard - SISTec 2026</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-green-50 min-h-screen">
     <!-- Navbar -->
-    <nav class="bg-blue-600 text-white p-4 shadow-md flex justify-between items-center">
-        <h1 class="text-xl font-bold">SISTec IoT Application 2026</h1>
+    <nav class="bg-green-700 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold flex items-center gap-2">
+            <span>🚜</span> SISTec Kissan IoT 2026
+        </h1>
         <div class="flex items-center gap-4">
-            <span id="usernameDisplay" class="font-medium">Welcome, User</span>
+            <span id="usernameDisplay" class="font-medium bg-green-800 px-3 py-1 rounded-lg">Welcome, Farmer</span>
+            <a href="/history.html" class="bg-yellow-500 text-yellow-900 px-4 py-1 rounded-lg font-bold hover:bg-yellow-400 text-sm">📜 View History</a>
             <a href="/logout" class="bg-red-500 px-3 py-1 rounded hover:bg-red-600 text-sm">Logout</a>
         </div>
     </nav>
 
     <div class="container mx-auto p-6">
-        <!-- Section 1: Latest Sensor Data -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-orange-500">
-                <h3 class="text-gray-500 uppercase text-sm font-bold mb-2">Latest Temperature</h3>
-                <div class="flex items-center justify-between">
-                    <span id="latestTemp" class="text-5xl font-extrabold text-orange-600">-- °C</span>
-                    <div class="text-right text-gray-400 text-xs">
-                        <p id="tempDate">Date: --</p>
-                        <p id="tempTime">Time: --</p>
+        
+        <!-- ALERT SECTION -->
+        <div id="alertBox" class="hidden mb-6">
+            <div id="irAlert" class="hidden bg-red-600 text-white p-6 rounded-2xl shadow-2xl animate-bounce flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <span class="text-4xl">⚠️</span>
+                    <div>
+                        <h2 class="text-2xl font-black">INTRUSION DETECTED!</h2>
+                        <p class="font-bold">Someone or something is in the field!</p>
                     </div>
                 </div>
             </div>
-            <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-blue-500">
-                <h3 class="text-gray-500 uppercase text-sm font-bold mb-2">Latest Humidity</h3>
-                <div class="flex items-center justify-between">
-                    <span id="latestHum" class="text-5xl font-extrabold text-blue-600">-- %</span>
-                    <div class="text-right text-gray-400 text-xs">
-                        <p id="humDate">Date: --</p>
-                        <p id="humTime">Time: --</p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white p-8 rounded-xl shadow-lg border-t-4 border-purple-500">
-                <h3 class="text-gray-500 uppercase text-sm font-bold mb-2">AI Weather Prediction</h3>
-                <div class="flex items-center justify-between">
-                    <span id="aiPrediction" class="text-3xl font-extrabold text-purple-600">Loading...</span>
-                    <div class="text-right text-gray-400 text-xs">
-                        <p>via Google Colab</p>
+            
+            <div id="motorAlert" class="hidden bg-orange-600 text-white p-6 rounded-2xl shadow-2xl flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                    <span class="text-4xl">⚡</span>
+                    <div>
+                        <h2 class="text-2xl font-black">MOTOR FAILURE DETECTED!</h2>
+                        <p class="font-bold">Soil is dry but Motor is not running. Check Electricity/Pump!</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Section 2: LCD Control -->
-        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Control LCD Display</h3>
-            <div class="flex flex-col md:flex-row gap-4">
-                <input type="text" id="lcdInput" maxlength="16" placeholder="Enter text (max 16 chars)" 
-                    class="flex-grow border-2 border-gray-200 p-3 rounded-lg focus:border-blue-500 outline-none">
-                <button onclick="updateLCD()" class="bg-green-600 text-white px-8 py-3 rounded-lg font-bold hover:bg-green-700 transition">Update LCD</button>
+        <!-- Section 1: Agriculture Status -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Soil Moisture -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-b-8 border-green-600">
+                <h3 class="text-gray-500 uppercase text-xs font-black mb-1">Soil Moisture</h3>
+                <div class="flex items-end gap-2">
+                    <span id="latestSoil" class="text-5xl font-black text-green-700">--%</span>
+                    <span id="soilStatus" class="text-sm font-bold text-gray-400 mb-2"></span>
+                </div>
+                <div class="mt-4 w-full bg-gray-200 rounded-full h-2">
+                    <div id="soilBar" class="bg-green-600 h-2 rounded-full transition-all" style="width: 0%"></div>
+                </div>
             </div>
-            <p id="lcdStatus" class="mt-2 text-sm text-green-600 hidden font-medium">Text saved to lcd.txt!</p>
+
+            <!-- Motor Status -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-b-8 border-blue-600">
+                <h3 class="text-gray-500 uppercase text-xs font-black mb-1">Motor (Pump)</h3>
+                <div class="flex items-center gap-3">
+                    <span id="motorStatus" class="text-3xl font-black text-gray-400 uppercase">OFF</span>
+                    <div id="motorIndicator" class="w-4 h-4 rounded-full bg-gray-300"></div>
+                </div>
+                <p class="text-xs text-gray-400 mt-2 font-bold">Auto-Mode: <span class="text-green-600">ENABLED</span></p>
+            </div>
+
+            <!-- Temperature -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-b-8 border-orange-500">
+                <h3 class="text-gray-500 uppercase text-xs font-black mb-1">Field Temp</h3>
+                <div class="flex items-center justify-between">
+                    <span id="latestTemp" class="text-4xl font-black text-orange-600">--°C</span>
+                    <div class="text-right text-gray-400 text-[10px]">
+                        <p id="tempDate">--</p>
+                        <p id="tempTime">--</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Advice -->
+            <div class="bg-white p-6 rounded-2xl shadow-lg border-b-8 border-purple-500">
+                <h3 class="text-gray-500 uppercase text-xs font-black mb-1">AI Crop Advice</h3>
+                <span id="aiPrediction" class="text-lg font-black text-purple-600">Analyzing...</span>
+                <p class="text-[10px] text-gray-400 mt-2">via Google Colab AI</p>
+            </div>
         </div>
 
-        <!-- Section 2.5: Climate Trends Graph -->
-        <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-            <h3 class="text-xl font-bold mb-4 text-gray-800">Climate Trends (Live Graph)</h3>
-            <div style="height: 350px;">
-                <canvas id="climateChart"></canvas>
+        <!-- Section 2: Graphs -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="lg:col-span-2 bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-lg font-bold mb-4 text-gray-800 flex items-center gap-2">📈 Climate & Soil Trends</h3>
+                <div style="height: 300px;">
+                    <canvas id="climateChart"></canvas>
+                </div>
+            </div>
+            
+            <div class="bg-white p-6 rounded-2xl shadow-lg">
+                <h3 class="text-lg font-bold mb-4 text-gray-800">Control Field Display</h3>
+                <div class="flex flex-col gap-4">
+                    <input type="text" id="lcdInput" maxlength="16" placeholder="Message for LCD" 
+                        class="border-2 border-green-100 p-3 rounded-xl focus:border-green-500 outline-none">
+                    <button onclick="updateLCD()" class="bg-green-700 text-white py-3 rounded-xl font-bold hover:bg-green-800 transition">Update LCD</button>
+                    <p id="lcdStatus" class="text-center text-xs text-green-600 hidden">Sent to Field!</p>
+                </div>
             </div>
         </div>
 
-        <!-- Section 3: Records History -->
-        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
-            <h3 class="p-4 bg-gray-800 text-white font-bold">Sensor Records History</h3>
+        <!-- Section 3: History Table -->
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-gray-100">
+            <h3 class="p-4 bg-green-900 text-white font-bold">Recent Field Activity</h3>
             <div class="overflow-x-auto">
                 <table class="w-full text-left">
-                    <thead class="bg-gray-100 border-b">
+                    <thead class="bg-gray-50 border-b">
                         <tr>
-                            <th class="p-4">#</th>
-                            <th class="p-4">Temperature</th>
-                            <th class="p-4">Humidity</th>
-                            <th class="p-4">Time</th>
-                            <th class="p-4">Date</th>
-                            <th class="p-4 text-center">Action</th>
+                            <th class="p-4 text-xs uppercase font-black text-gray-400">Time</th>
+                            <th class="p-4 text-xs uppercase font-black text-gray-400">Temp</th>
+                            <th class="p-4 text-xs uppercase font-black text-gray-400">Moisture</th>
+                            <th class="p-4 text-xs uppercase font-black text-gray-400">IR Sensor</th>
+                            <th class="p-4 text-xs uppercase font-black text-gray-400">Motor</th>
+                            <th class="p-4 text-center text-xs uppercase font-black text-gray-400">Action</th>
                         </tr>
                     </thead>
-                    <tbody id="recordsTable" class="divide-y">
-                        <!-- Rows injected by JavaScript -->
+                    <tbody id="recordsTable" class="divide-y divide-gray-50">
+                        <!-- Rows injected by JS -->
                     </tbody>
                 </table>
             </div>
@@ -94,10 +133,8 @@
     </div>
 
     <script>
-        // Chart variable
         let climateChart;
 
-        // Initialize Chart
         function initChart() {
             const ctx = document.getElementById('climateChart').getContext('2d');
             climateChart = new Chart(ctx, {
@@ -105,83 +142,90 @@
                 data: {
                     labels: [],
                     datasets: [
-                        {
-                            label: 'Temperature (°C)',
-                            borderColor: '#f97316',
-                            backgroundColor: 'rgba(249, 115, 22, 0.1)',
-                            data: [],
-                            fill: true,
-                            tension: 0.4
-                        },
-                        {
-                            label: 'Humidity (%)',
-                            borderColor: '#3b82f6',
-                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                            data: [],
-                            fill: true,
-                            tension: 0.4
-                        }
+                        { label: 'Temp', borderColor: '#f97316', data: [], tension: 0.4 },
+                        { label: 'Moisture', borderColor: '#10b981', data: [], tension: 0.4 }
                     ]
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: { 
-                            beginAtZero: false,
-                            grid: { color: '#f3f4f6' }
-                        },
-                        x: {
-                            grid: { display: false }
-                        }
-                    },
-                    plugins: {
-                        legend: { position: 'top' }
-                    }
-                }
+                options: { responsive: true, maintainAspectRatio: false }
             });
         }
 
-        // Fetch user info
         fetch('/api/user').then(res => res.json()).then(user => {
             document.getElementById('usernameDisplay').innerText = `Welcome, ${user.name}`;
         }).catch(() => window.location.href = '/');
 
-        // Fetch sensor data
         function loadData() {
-            // Fetch Sensors
             fetch('/api/sensors').then(res => res.json()).then(data => {
                 const tableBody = document.getElementById('recordsTable');
                 tableBody.innerHTML = '';
+                
+                const alertBox = document.getElementById('alertBox');
+                const irAlert = document.getElementById('irAlert');
+                const motorAlert = document.getElementById('motorAlert');
 
                 if (data.length > 0) {
-                    // Update latest cards
                     const latest = data[0];
-                    document.getElementById('latestTemp').innerText = `${latest.temp} °C`;
-                    document.getElementById('latestHum').innerText = `${latest.hum} %`;
-                    document.getElementById('tempDate').innerText = `Date: ${latest.date}`;
-                    document.getElementById('tempTime').innerText = `Time: ${latest.time}`;
-                    document.getElementById('humDate').innerText = `Date: ${latest.date}`;
-                    document.getElementById('humTime').innerText = `Time: ${latest.time}`;
+                    
+                    // Update Cards
+                    document.getElementById('latestTemp').innerText = `${latest.temp}°C`;
+                    document.getElementById('latestSoil').innerText = `${latest.soil}%`;
+                    document.getElementById('motorStatus').innerText = latest.motor;
+                    document.getElementById('tempDate').innerText = latest.date;
+                    document.getElementById('tempTime').innerText = latest.time;
+                    
+                    // Soil Bar & Status
+                    const soilVal = parseFloat(latest.soil);
+                    document.getElementById('soilBar').style.width = soilVal + '%';
+                    document.getElementById('soilStatus').innerText = soilVal < 30 ? "DRY" : (soilVal > 70 ? "WET" : "GOOD");
 
-                    // Update Chart (Last 10 records)
+                    // Motor UI
+                    const mInd = document.getElementById('motorIndicator');
+                    const mTxt = document.getElementById('motorStatus');
+                    if(latest.motor === 'ON') {
+                        mInd.classList.replace('bg-gray-300', 'bg-blue-500');
+                        mTxt.classList.replace('text-gray-400', 'text-blue-600');
+                    } else {
+                        mInd.classList.replace('bg-blue-500', 'bg-gray-300');
+                        mTxt.classList.replace('text-blue-600', 'text-gray-400');
+                    }
+
+                    // ALERT LOGIC
+                    let hasAlert = false;
+                    if(latest.ir === 'ALERT') {
+                        irAlert.classList.remove('hidden');
+                        hasAlert = true;
+                    } else {
+                        irAlert.classList.add('hidden');
+                    }
+
+                    if(latest.motorError) {
+                        motorAlert.classList.remove('hidden');
+                        hasAlert = true;
+                    } else {
+                        motorAlert.classList.add('hidden');
+                    }
+
+                    if(hasAlert) alertBox.classList.remove('hidden');
+                    else alertBox.classList.add('hidden');
+
+                    // Update Chart
                     const chartData = [...data].slice(0, 10).reverse();
                     climateChart.data.labels = chartData.map(d => d.time);
                     climateChart.data.datasets[0].data = chartData.map(d => d.temp);
-                    climateChart.data.datasets[1].data = chartData.map(d => d.hum);
+                    climateChart.data.datasets[1].data = chartData.map(d => d.soil);
                     climateChart.update();
 
-                    // Populate table
+                    // Table
                     data.forEach((item, index) => {
                         const row = `
-                            <tr>
-                                <td class="p-4">${index + 1}</td>
-                                <td class="p-4 font-bold text-orange-600">${item.temp} °C</td>
-                                <td class="p-4 font-bold text-blue-600">${item.hum} %</td>
-                                <td class="p-4">${item.time}</td>
-                                <td class="p-4">${item.date}</td>
+                            <tr class="hover:bg-gray-50 transition text-sm">
+                                <td class="p-4 font-bold text-gray-400">${item.time}</td>
+                                <td class="p-4 font-black text-orange-600">${item.temp}°C</td>
+                                <td class="p-4 font-black text-green-600">${item.soil}%</td>
+                                <td class="p-4"><span class="px-2 py-1 rounded text-[10px] font-bold ${item.ir === 'ALERT' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400'}">${item.ir}</span></td>
+                                <td class="p-4 font-black ${item.motor === 'ON' ? 'text-blue-600' : 'text-gray-300'}">${item.motor}</td>
                                 <td class="p-4 text-center">
-                                    <button onclick="deleteRecord(${index})" class="bg-red-100 text-red-600 px-3 py-1 rounded-md hover:bg-red-600 hover:text-white transition text-xs font-bold">Delete</button>
+                                    <button onclick="deleteRecord(${index})" class="text-gray-300 hover:text-red-500 text-xs">Delete</button>
                                 </td>
                             </tr>
                         `;
@@ -190,42 +234,38 @@
                 }
             });
 
-            // Fetch AI Prediction
             fetch('/api/get-prediction').then(res => res.json()).then(data => {
                 document.getElementById('aiPrediction').innerText = data.prediction;
             });
         }
 
-        // Update LCD
         function updateLCD() {
             const text = document.getElementById('lcdInput').value;
             fetch('/api/update-lcd', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text })
-            }).then(res => res.json()).then(data => {
-                const status = document.getElementById('lcdStatus');
-                status.classList.remove('hidden');
-                setTimeout(() => status.classList.add('hidden'), 3000);
+            }).then(() => {
+                const s = document.getElementById('lcdStatus');
+                s.classList.remove('hidden');
+                setTimeout(() => s.classList.add('hidden'), 2000);
             });
         }
 
-        // Delete record
         function deleteRecord(index) {
-            if (confirm('Delete this record?')) {
+            if (confirm('Delete?')) {
                 fetch('/api/delete-record', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ index })
-                }).then(res => res.json()).then(() => loadData());
+                }).then(() => loadData());
             }
         }
 
-        // Initialize and Start
         window.onload = () => {
             initChart();
             loadData();
-            setInterval(loadData, 5000);
+            setInterval(loadData, 3000); // Faster refresh for alerts
         };
     </script>
 </body>

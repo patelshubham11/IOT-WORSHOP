@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Irrigation History - Smart Farmer App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-green-50 min-h-screen">
+    <!-- Navbar -->
+    <nav class="bg-green-700 text-white p-4 shadow-md flex justify-between items-center">
+        <h1 class="text-xl font-bold flex items-center gap-2">
+            <span>🚜</span> Kissan Smart History
+        </h1>
+        <div class="flex items-center gap-4">
+            <a href="/dashboard.html" class="bg-green-600 px-4 py-2 rounded-lg hover:bg-green-500 transition font-bold text-sm">Back to Dashboard</a>
+            <a href="/logout" class="bg-red-500 px-3 py-1 rounded hover:bg-red-600 text-sm">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container mx-auto p-6">
+        <div class="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-green-200">
+            <div class="bg-green-700 p-6 text-white">
+                <h2 class="text-2xl font-bold">Motor & Irrigation Logs</h2>
+                <p class="text-green-100 opacity-80 text-sm">Track when the motor started, stopped, or failed due to power issues.</p>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-gray-100 border-b-2 border-gray-200">
+                        <tr>
+                            <th class="p-5 font-bold text-gray-700">Date</th>
+                            <th class="p-5 font-bold text-gray-700">Time</th>
+                            <th class="p-5 font-bold text-gray-700">Soil Condition</th>
+                            <th class="p-5 font-bold text-gray-700">Event</th>
+                            <th class="p-5 font-bold text-gray-700">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTable" class="divide-y divide-gray-100">
+                        <!-- Logs injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+            <div id="noData" class="p-20 text-center text-gray-400 hidden">
+                <p class="text-xl">No logs available yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadHistory() {
+            fetch('/api/irrigation-history')
+                .then(res => res.json())
+                .then(data => {
+                    const tableBody = document.getElementById('historyTable');
+                    const noData = document.getElementById('noData');
+                    tableBody.innerHTML = '';
+
+                    if (data.length === 0) {
+                        noData.classList.remove('hidden');
+                        return;
+                    }
+
+                    noData.classList.add('hidden');
+                    data.forEach(item => {
+                        const statusClass = item.status.includes("SUCCESS") 
+                            ? "bg-green-100 text-green-700" 
+                            : "bg-red-100 text-red-700 font-bold animate-pulse";
+                        
+                        const row = `
+                            <tr class="hover:bg-green-50 transition">
+                                <td class="p-5 font-medium text-gray-600">${item.date}</td>
+                                <td class="p-5 font-medium text-gray-600">${item.time}</td>
+                                <td class="p-5 text-gray-800 font-bold">${item.soil}</td>
+                                <td class="p-5 font-bold ${item.motor === 'ON' ? 'text-blue-600' : 'text-gray-500'}">${item.event}</td>
+                                <td class="p-5">
+                                    <span class="px-3 py-1 rounded-full text-xs ${statusClass}">
+                                        ${item.status}
+                                    </span>
+                                </td>
+                            </tr>
+                        `;
+                        tableBody.innerHTML += row;
+                    });
+                });
+        }
+
+        // Auto refresh history every 10 seconds
+        loadHistory();
+        setInterval(loadHistory, 10000);
+    </script>
+</body>
+</html>

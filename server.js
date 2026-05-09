@@ -47,6 +47,8 @@ const sensorPath = path.join(dataDir, 'sensor_data.json');
 
 const lcdPath = path.join(dataDir, 'lcd.txt');
 
+const irrigationHistoryPath = path.join(dataDir, 'irrigation_history.json');
+
 // ======================
 // INITIALIZE DATABASE
 // ======================
@@ -65,6 +67,10 @@ async function initDB() {
 
     if (!(await fs.pathExists(lcdPath))) {
         await fs.writeFile(lcdPath, 'SISTec IoT 2026');
+    }
+
+    if (!(await fs.pathExists(irrigationHistoryPath))) {
+        await fs.writeJson(irrigationHistoryPath, []);
     }
 }
 
@@ -344,65 +350,73 @@ app.get('/api/device-status', (req, res) => {
 // ======================
 
 // SAVE SENSOR DATA
-
 app.all('/api/save-data', async (req, res) => {
-
     try {
-
         const key = req.query.key || req.body.key;
+        if (key !== API_KEY) return res.status(401).send('INVALID API KEY');
 
-        if (key !== API_KEY) {
+        const { temp, hum, soil, ir, motor } = { ...req.query, ...req.body };
 
-            return res.status(401).send('INVALID API KEY');
-        }
-
-        const temp = req.query.temp || req.body.temp;
-
-        const hum = req.query.hum || req.body.hum;
-
-        if (!temp || !hum) {
-
+        if (!temp || !hum || soil === undefined) {
             return res.status(400).send('MISSING DATA');
         }
 
-        if (isNaN(temp) || isNaN(hum)) {
-
-            return res.status(400).send('INVALID SENSOR DATA');
-        }
-
         const { time, date } = getKolkataTime();
-
         const data = await fs.readJson(sensorPath);
 
-        // ADD NEW DATA AT TOP
-
-        data.unshift({
-            temp,
-            hum,
-            time,
-            date
-        });
-
-        // KEEP ONLY 500 RECORDS
-
-        if (data.length > 500) {
-            data.pop();
+        // Check for Motor Failure
+        // Logic: If Soil < 30 (Need water) but Motor is 0 (OFF) -> Failure
+        let motorError = false;
+        if (parseFloat(soil) < 30 && parseInt(motor) === 0) {
+            motorError = true;
         }
 
+        const newRecord = {
+            temp,
+            hum,
+            soil,
+            ir: parseInt(ir) === 1 ? "ALERT" : "SAFE",
+            motor: parseInt(motor) === 1 ? "ON" : "OFF",
+            motorError,
+            time,
+            date
+        };
+
+        data.unshift(newRecord);
+        if (data.length > 500) data.pop();
         await fs.writeJson(sensorPath, data);
 
-        // UPDATE LAST SEEN
+        // Log to Irrigation History if motor state changed
+        const history = await fs.readJson(irrigationHistoryPath);
+        if (history.length === 0 || history[0].motor !== newRecord.motor) {
+            history.unshift({
+                event: `Motor turned ${newRecord.motor}`,
+                soil: `${soil}%`,
+                status: motorError ? "FAILED (No Power?)" : "SUCCESS",
+                time,
+                date,
+                motor: newRecord.motor
+            });
+            if (history.length > 200) history.pop();
+            await fs.writeJson(irrigationHistoryPath, history);
+        }
 
         lastSeen = new Date();
-
-        console.log("NEW SENSOR DATA:", temp, hum);
-
+        console.log("SMART FARMER DATA:", newRecord);
         res.send('DATA SAVED');
 
     } catch (error) {
-
         console.log(error);
+        res.status(500).send('SERVER ERROR');
+    }
+});
 
+// GET IRRIGATION HISTORY
+app.get('/api/irrigation-history', async (req, res) => {
+    try {
+        const data = await fs.readJson(irrigationHistoryPath);
+        res.json(data);
+    } catch (error) {
         res.status(500).send('SERVER ERROR');
     }
 });
