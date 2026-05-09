@@ -18,6 +18,7 @@ const API_KEY = "SISTEC2026";
 // ======================
 
 let lastSeen = null;
+let latestPrediction = "Waiting for AI...";
 
 // ======================
 // MIDDLEWARE
@@ -422,6 +423,31 @@ app.get('/api/get-lcd', async (req, res) => {
 
         res.status(500).send('SERVER ERROR');
     }
+});
+
+// ======================
+// WEATHER PREDICTION APIs (For Google Colab)
+// ======================
+
+// Save Prediction from Colab
+app.post('/api/save-prediction', async (req, res) => {
+    try {
+        const { prediction, key } = req.body;
+        if (key !== API_KEY) {
+            return res.status(401).send('INVALID API KEY');
+        }
+        latestPrediction = prediction;
+        console.log("AI Prediction Received from Colab:", prediction);
+        res.json({ success: true });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send('SERVER ERROR');
+    }
+});
+
+// Get Prediction for Dashboard
+app.get('/api/get-prediction', (req, res) => {
+    res.json({ prediction: latestPrediction });
 });
 
 // ======================
